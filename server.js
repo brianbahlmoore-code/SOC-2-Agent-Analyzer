@@ -232,6 +232,101 @@ app.get('/output-file', (req, res) => {
   res.sendFile(filePath);
 });
 
+// ─── Demo Endpoint (Portfolio Embed) ──────────────────────────────────────
+// Uses pre-extracted PDF text from demo-data/*.json — no file upload needed.
+app.post('/api/demo', async (req, res) => {
+  const DEMO_DIR = path.join(__dirname, 'demo-data');
+  const demoFiles = [
+    { key: 'github',   label: 'GitHub SOC 2 Type II (2025)',       file: 'github.json' },
+    { key: 'onetrust', label: 'OneTrust Certification Automation', file: 'onetrust.json' },
+    { key: 'vanta',    label: 'Vanta SOC 2 Type II (2025)',        file: 'vanta.json' },
+  ];
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  });
+
+  const send = (type, payload) => {
+    res.write(`data: ${JSON.stringify({ type, ...payload })}\n\n`);
+  };
+
+  try {
+    send('step', { text: '🔍 Loading pre-extracted SOC 2 reports...' });
+    send('found', { text: `📂 Found **${demoFiles.length}** demo report(s).`, files: demoFiles.map(f => f.label) });
+
+    const aiEntries = [];
+    const results = [];
+
+    for (let i = 0; i < demoFiles.length; i++) {
+      const df = demoFiles[i];
+      send('progress', { text: `\n─────────────────────────────\n📄 [${i + 1}/${demoFiles.length}] **${df.label}**`, file: df.label });
+
+      const jsonPath = path.join(DEMO_DIR, df.file);
+      if (!fs.existsSync(jsonPath)) {
+        send('step', { text: `   ❌ Demo data not found: ${df.file}` });
+        results.push({ file: df.label, success: false, error: 'Demo data missing' });
+        continue;
+      }
+
+      const { text, pages } = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+      send('step', { text: `   ✅ Loaded ${pages} pages from demo data` });
+      send('step', { text: `   🤖 Analyzing with Gemini AI... (this may take 15–30 seconds)` });
+
+      try {
+        const data = await processWithAI(text, API_KEY, (attempt, waitSec, msg) => {
+          if (msg) send('step', { text: `   🔄 ${msg}` });
+          else send('step', { text: `   ⏳ Rate limited — retrying in ${waitSec}s (attempt ${attempt}/3)...` });
+        });
+        const exceptCount = Array.isArray(data.exceptions) ? data.exceptions.length : 0;
+        send('step', { text: `   ✅ ${data.serviceOrganization || df.label} | ${data.reportType || 'SOC 2'} | ${exceptCount} exception(s)` });
+        aiEntries.push({ data, sourceFilename: df.label });
+        results.push({ file: df.label, success: true });
+      } catch (err) {
+        send('step', { text: `   ❌ AI failed: ${err.message}` });
+        results.push({ file: df.label, success: false, error: err.message });
+        if (err.message && err.message.includes('Daily Gemini')) {
+          send('msg', { text: '⛔ **Daily quota exhausted.** Quota resets at midnight Pacific Time.' });
+          break;
+        }
+        continue;
+      }
+
+      if (i < demoFiles.length - 1) {
+        send('step', { text: `   ⏸ Cooling down 5s...` });
+        await new Promise(r => setTimeout(r, 5000));
+      }
+    }
+
+    const succeeded = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+
+    if (aiEntries.length > 0) {
+      send('step', { text: `\n📝 Generating unified report for ${aiEntries.length} organization(s)...` });
+      const output = generateUnifiedReport(aiEntries, OUTPUT_DIR);
+      send('step', { text: `   ✅ Saved: **${output.filename}**` });
+
+      let summary = `\n🎉 **Done! ${succeeded.length}/${demoFiles.length} reports analyzed.**\n`;
+      output.summaryData.forEach(c => {
+        summary += `\n• **${c.company}** — ${c.opinion} Opinion | ${c.exceptions} deviation(s) | ${c.remediations} remediation(s) | ${c.mitigating} mitigating control(s)`;
+      });
+      if (failed.length > 0) summary += `\n\n❌ **Failed:**\n` + failed.map(r => `• ${r.file}: ${r.error}`).join('\n');
+
+      send('done', { text: summary, reportFilename: output.filename, summaryData: output.summaryData, results });
+    } else {
+      send('done', { text: `\n❌ No reports could be processed.\n` + failed.map(r => `• ${r.file}: ${r.error}`).join('\n'), results });
+    }
+  } catch (err) {
+    send('error', { text: `❌ Demo error: ${err.message}` });
+  } finally {
+    send('end', {});
+    res.end();
+  }
+});
+
 // ─── Start ─────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n✅ SOC 2 Audit Agent running at http://localhost:${PORT}`);

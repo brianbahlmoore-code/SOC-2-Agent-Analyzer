@@ -5,3 +5,4 @@ input/
 soc2-skill/
 soc2.zip
 *.log
+# demo-data/ is intentionally tracked (pre-extracted text, no raw PDFs)
