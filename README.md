@@ -119,7 +119,7 @@ Quota resets at **midnight Pacific Time** daily.
 ## Author
 
 **Brian Bahl Moore**  
-[LinkedIn](https://linkedin.com/in/brianbahl) · [Portfolio](https://brianbahlmoore-code.github.io/)
+[LinkedIn](https://www.linkedin.com/in/brianbahlmoore/) · [Portfolio](https://github.com/brianbahlmoore-code)
 
 ---
 
