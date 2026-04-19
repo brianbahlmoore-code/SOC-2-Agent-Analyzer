@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOC 2 Report Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">
+          <span class="logo-title">SOC 2 Analyzer</span>
+          <span class="logo-sub">AI Audit Agent</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">
+        <span>Input Reports</span>
+        <button class="refresh-btn" id="refreshInputBtn" title="Refresh">↻</button>
+      </div>
+      <div class="file-list" id="inputFileList">
+        <div class="file-empty">Drop PDFs into<br><code>/input</code> folder</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">
+        <span>Generated Docs</span>
+        <button class="refresh-btn" id="refreshOutputBtn" title="Refresh">↻</button>
+      </div>
+      <div class="file-list" id="outputFileList">
+        <div class="file-empty">No documents yet</div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Ready</span>
+    </div>
+  </aside>
+
+  <!-- Main Chat -->
+  <main class="chat-area">
+    <header class="chat-header">
+      <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+      <div class="chat-header-info">
+        <h1 class="chat-title">SOC 2 Report Analyzer</h1>
+        <span class="chat-subtitle">Reads · Extracts · Remediates · Documents</span>
+      </div>
+      <div class="model-badge">Gemini 2.0 Flash</div>
+    </header>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+      <div class="quick-actions">
+        <button class="quick-btn" data-msg="do your magic">✨ Do your magic</button>
+        <button class="quick-btn" data-msg="scan folder">🔍 Scan Folder</button>
+        <button class="quick-btn" data-msg="list output">📄 List Output</button>
+        <button class="quick-btn" data-msg="help">Help</button>
+      </div>
+      <div class="input-row">
+        <textarea
+          id="msgInput"
+          class="msg-input"
+          placeholder="e.g. 'document all SOC 2 reports' or 'scan folder'"
+          rows="1"
+        ></textarea>
+        <button class="send-btn" id="sendBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint"><kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
